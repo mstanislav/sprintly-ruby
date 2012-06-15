@@ -5,6 +5,7 @@ require 'rest_client'
 require 'yaml'
 require 'json'
 require 'text-table'
+require 'trollop'
 require 'pp'
 
 CONFIGURATION_FILE = File.expand_path('~/.sprintlyrb')
@@ -15,19 +16,19 @@ API_PATH = '/api/'
 class Sprintly
   def initialize
     load_configuration 
-    @api = "#{API_PROTO}://#{@conf['username'].gsub('@','%40')}:#{@conf['apikey']}@#{API_HOST}#{API_PATH}"
-    get_products(true)
+    options
   end
 
   def get_products(show_items = false, archived = true)
     products = api_get('products')
     api_fail unless products != false
 
-    puts "\n=== Your#{archived == false ? ' current ': ''} Sprint.ly products are ===\n\n"
-    JSON.parse(products).each do |product|
+    puts "\n=== Your#{archived == false ? ' current': ''} Sprint.ly products are ===\n\n"
+    products.each do |product|
       puts "#{product['name']}" 
-      show_item_table(product['id']) unless show_items == false
+      puts show_item_table(product['id']) unless show_items == false
     end
+    puts
   end
 
   def get_items(product_id)
@@ -37,6 +38,22 @@ class Sprintly
   end
 
 private
+  def options
+    opts = Trollop::options do
+      version "Sprint.ly Ruby 1.0 (c) 2012 Mark Stanislav"
+      banner <<-EOS.gsub(/^ {6}/,'')
+
+      Usage:
+      #{$0} [options] products
+      EOS
+
+      opt :items, "Show items table with products", :default => false, :short => "-i"
+      opt :archived, "Show archived products", :default => false, :short => "-a"
+    end
+
+    get_products(opts[:items], opts[:archived])
+  end
+
   def api_fail
     abort "\nThe API was unable to retrieve results. Please check your settings and connectivity.\n\n"
   end
@@ -44,7 +61,7 @@ private
   def api_get(endpoint, path = nil, value = nil)
     extra = (path != nil and value != nil) ? "#{path}/#{value}/" : ''
     res = RestClient.get "#{@api}#{extra}#{endpoint}.json", {:accept => :json}
-    return res.code == 200 ? res : false
+    return res.code == 200 ? JSON.parse(res) : false
   end
 
   def prompt(*args)
@@ -53,22 +70,23 @@ private
   end
 
   def show_item_table(product_id)
-    items = JSON.parse(get_items(product_id))
+    items = get_items(product_id)
     if items.size > 0
       table = Text::Table.new
       table.head = ['Item', 'Title', 'Status', 'Type', 'Score', 'Tags']
       items.each do |item|
         table.rows << [item['number'], item['title'], item['status'], item['type'], item['score'], item['tags'].to_a.join(',')]
       end
-      puts "#{table.to_s}\n"
+      return "#{table.to_s}\n"
     else
-      puts "-- No items for this product. --\n\n"
+      return "-- No items for this product. --\n\n"
     end
   end
 
   def load_configuration
     if File.file?(CONFIGURATION_FILE)
       @conf = YAML.load_file(CONFIGURATION_FILE)
+      @api = "#{API_PROTO}://#{@conf['username'].gsub('@','%40')}:#{@conf['apikey']}@#{API_HOST}#{API_PATH}"
     else
       puts "\nYour configuration file #{CONFIGURATION_FILE} is missing, please answer the following questions:\n\n" 
       set_configuration 
