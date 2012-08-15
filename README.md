@@ -46,12 +46,14 @@ Sprintly Ruby
 $ ./sprintly.rb -h
 
 Usage:
-./sprintly.rb [options] products
-     --items, -i:   Show items table with products
-  --archived, -a:   Show archived products
-    --people, -p:   Show people involved with a product
-   --version, -v:   Print version and exit
-      --help, -h:   Show this message
+./sprintly.rb [options]
+        --reset, -r:   Reset Sprint.ly authentication information
+        --items, -i:   Show items table with products
+     --archived, -a:   Show archived products
+         --team, -t:   Show which team members involved with a product
+  --product, -p <s>:   Specify whether to show a specific product or ALL products (default: all)
+      --version, -v:   Print version and exit
+         --help, -h:   Show this message
 ```
 
 # TODO

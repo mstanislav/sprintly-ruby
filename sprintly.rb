@@ -66,13 +66,18 @@ private
       #{$0} [options]
       EOS
 
+      opt :reset, "Reset Sprint.ly authentication information"
       opt :items, "Show items table with products", :default => false, :short => "-i"
       opt :archived, "Show archived products", :default => false, :short => "-a"
       opt :team, "Show which team members involved with a product", :default => false, :short => "-t"
       opt :product, "Specify whether to show a specific product or ALL products", :default => 'all', :short => "-p"
     end
 
-    get_products(opts[:items], opts[:archived], opts[:team], opts[:product])
+    if opts[:reset]
+      set_configuration
+    else
+      get_products(opts[:items], opts[:archived], opts[:team], opts[:product])
+    end
   end
 
   def api_fail
