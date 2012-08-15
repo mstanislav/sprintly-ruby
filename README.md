@@ -4,9 +4,10 @@
 ```
 $ ./sprintly.rb products
 
-=== Your current Sprint.ly products are ===
+=== Your Sprint.ly products are ===
 
 Pool 100
+
 Sprintly Ruby
 ```
 
@@ -16,8 +17,10 @@ $ ./sprintly.rb -a products
 
 === Your Sprint.ly products are ===
 
-Test Product
+Test Product [Archived]
+
 Pool 100
+
 Sprintly Ruby
 ```
 
@@ -25,7 +28,7 @@ Sprintly Ruby
 ```
 $ ./sprintly.rb -i products
 
-=== Your current Sprint.ly products are ===
+=== Your Sprint.ly products are ===
 
 Pool 100
 -- No items for this product. --
@@ -46,11 +49,11 @@ Usage:
 ./sprintly.rb [options] products
      --items, -i:   Show items table with products
   --archived, -a:   Show archived products
+    --people, -p:   Show people involved with a product
    --version, -v:   Print version and exit
       --help, -h:   Show this message
 ```
 
 # TODO
-* Option to display users who are involved in a project
 * Option to show items of only a certain type
 * Option to show items that are of a certain status

@@ -19,22 +19,41 @@ class Sprintly
     options
   end
 
-  def get_products(show_items = false, archived = true)
+  def get_products(show_items = false, show_archived = true, show_people = false, show_products = 'all')
     products = api_get('products')
     api_fail unless products != false
 
-    puts "\n=== Your#{archived == false ? ' current': ''} Sprint.ly products are ===\n\n"
-    products.each do |product|
-      puts "#{product['name']}" 
-      puts show_item_table(product['id']) unless show_items == false
-    end
     puts
+    puts "=== Your Sprint.ly products are ===\n\n" if show_products == 'all'
+    products.each do |product|
+      if show_products == 'all' or make_slug(product['name']) == show_products
+        if product['archived'] == false or show_archived == true
+          puts "#{product['name']}#{product['archived'] == true ? ' [Archived]' : ''} (#{make_slug(product['name'])})"
+          puts show_item_table(product['id'], product['archived']) unless show_items == false
+          puts show_people_list(product['id']) unless show_people == false or product['archived'] == true
+          puts if show_people == true or show_items == true
+        end
+      end
+    end
   end
 
-  def get_items(product_id)
-    items = api_get('items', 'products', product_id)
-    api_fail unless items != false
-    return items 
+  def show_item_table(product_id, archived = false)
+    return "-- This product has been archived. --\n" unless archived == false
+    items = get_items(product_id)
+    if items.size > 0
+      table = Text::Table.new
+      table.head = ['Item', 'Title', 'Status', 'Type', 'Score', 'Tags']
+      items.each do |item|
+        table.rows << [item['number'], item['title'], item['status'], item['type'], item['score'], item['tags'].to_a.join(',')]
+      end
+      return "#{table.to_s}"
+    else
+      return "-- No items for this product. --\n"
+    end
+  end
+
+  def show_people_list(product_id)
+    return "People Involved: " + get_people(product_id).collect { |person| "#{person['first_name']} #{person['last_name']}" }.join(', ')
   end
 
 private
@@ -44,14 +63,16 @@ private
       banner <<-EOS.gsub(/^ {6}/,'')
 
       Usage:
-      #{$0} [options] products
+      #{$0} [options]
       EOS
 
       opt :items, "Show items table with products", :default => false, :short => "-i"
       opt :archived, "Show archived products", :default => false, :short => "-a"
+      opt :team, "Show which team members involved with a product", :default => false, :short => "-t"
+      opt :product, "Specify whether to show a specific product or ALL products", :default => 'all', :short => "-p"
     end
 
-    get_products(opts[:items], opts[:archived])
+    get_products(opts[:items], opts[:archived], opts[:team], opts[:product])
   end
 
   def api_fail
@@ -69,18 +90,16 @@ private
     gets
   end
 
-  def show_item_table(product_id)
-    items = get_items(product_id)
-    if items.size > 0
-      table = Text::Table.new
-      table.head = ['Item', 'Title', 'Status', 'Type', 'Score', 'Tags']
-      items.each do |item|
-        table.rows << [item['number'], item['title'], item['status'], item['type'], item['score'], item['tags'].to_a.join(',')]
-      end
-      return "#{table.to_s}\n"
-    else
-      return "-- No items for this product. --\n\n"
-    end
+  def get_items(product_id)
+    items = api_get('items', 'products', product_id)
+    api_fail unless items != false
+    return items 
+  end
+
+  def get_people(product_id)
+    people = api_get('people','products', product_id)
+    api_fail unless people != false
+    return people
   end
 
   def load_configuration
@@ -114,6 +133,10 @@ private
 
     check_configuration(username, apikey)
   end
+
+  def make_slug(product)
+    return product.gsub("'", "").gsub('"', '').gsub(' ', '-').downcase
+  end 
 end
 
 sprintly = Sprintly.new
